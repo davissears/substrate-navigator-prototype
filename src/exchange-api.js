@@ -1,22 +1,26 @@
-export const MCP_ENDPOINT = "https://substrate-exchange.5.78.90.96.sslip.io/mcp";
 export const DEFAULT_RESOURCE_PREFIX = "public/";
 const LIST_PAGE_LIMIT = 100;
 const ACTIVITY_LIMIT = 25;
 
 let nextRequestId = 1;
 
-export async function loadExchangeSnapshot({ resourcePrefix = DEFAULT_RESOURCE_PREFIX } = {}) {
+export async function loadExchangeSnapshot({ endpoint, resourcePrefix = DEFAULT_RESOURCE_PREFIX } = {}) {
+  if (!endpoint) {
+    throw new Error("No MCP endpoint configured.");
+  }
+
   const [statusResult, listResult, recentResult] = await Promise.all([
-    callExchangeTool("exchange_status"),
-    listExchangeResources(resourcePrefix),
-    callExchangeTool("exchange_recent_activity", { limit: ACTIVITY_LIMIT })
+    callExchangeTool(endpoint, "exchange_status"),
+    listExchangeResources(endpoint, resourcePrefix),
+    callExchangeTool(endpoint, "exchange_recent_activity", { limit: ACTIVITY_LIMIT })
   ]);
 
   const resources = await Promise.all(
-    listResult.items.map((item) => loadResourceDetails(item))
+    listResult.items.map((item) => loadResourceDetails(endpoint, item))
   );
 
   return {
+    endpoint,
     surface: statusResult.surface ?? "exchange",
     principal: statusResult.principal ?? "unknown principal",
     capturedAt: new Date().toISOString(),
@@ -31,13 +35,13 @@ export async function loadExchangeSnapshot({ resourcePrefix = DEFAULT_RESOURCE_P
   };
 }
 
-async function listExchangeResources(resourcePrefix) {
+async function listExchangeResources(endpoint, resourcePrefix) {
   const items = [];
   const pages = [];
   let cursor;
 
   do {
-    const page = await callExchangeTool("exchange_list", {
+    const page = await callExchangeTool(endpoint, "exchange_list", {
       prefix: resourcePrefix,
       limit: LIST_PAGE_LIMIT,
       ...(cursor ? { cursor } : {})
@@ -54,11 +58,11 @@ async function listExchangeResources(resourcePrefix) {
   };
 }
 
-async function loadResourceDetails(item) {
+async function loadResourceDetails(endpoint, item) {
   const listedPath = item.path;
   const [readResult, inspectResult] = await Promise.all([
-    callExchangeTool("exchange_read", { resource: listedPath }),
-    inspectResource(listedPath)
+    callExchangeTool(endpoint, "exchange_read", { resource: listedPath }),
+    inspectResource(endpoint, listedPath)
   ]);
   const path = readResult.resource ?? listedPath;
   const inspect = inspectResult.rawInspect;
@@ -76,10 +80,10 @@ async function loadResourceDetails(item) {
   };
 }
 
-async function inspectResource(path) {
+async function inspectResource(endpoint, path) {
   try {
     return {
-      rawInspect: await callExchangeTool("exchange_inspect", { resource: path }),
+      rawInspect: await callExchangeTool(endpoint, "exchange_inspect", { resource: path }),
       inspectError: null
     };
   } catch (error) {
@@ -104,8 +108,8 @@ function rawListForPages(pages, items) {
   return rawList;
 }
 
-async function callExchangeTool(name, args = {}) {
-  const response = await fetch(MCP_ENDPOINT, {
+async function callExchangeTool(endpoint, name, args = {}) {
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       Accept: "application/json, text/event-stream",
