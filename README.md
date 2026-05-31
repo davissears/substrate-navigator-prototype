@@ -1,6 +1,6 @@
 # Substrate Readable GUI
 
-Local static interface for browsing readable Substrate MCP exchange resources from the live MCP endpoint.
+Local static interface for browsing readable Substrate MCP exchange resources from a user-configured MCP endpoint.
 
 ## Navigation Features
 
@@ -28,13 +28,13 @@ If that port is already in use, choose another one:
 PORT=4174 npm run start
 ```
 
+## Configure
+
+Enter the Substrate MCP endpoint in the sidebar, then refresh. The app stores the endpoint in browser local storage for the next session.
+
 ## Notes
 
-The app POSTs JSON-RPC directly to:
-
-```text
-https://substrate-exchange.5.78.90.96.sslip.io/mcp
-```
+The app POSTs JSON-RPC directly to the configured endpoint.
 
 On load it calls:
 
