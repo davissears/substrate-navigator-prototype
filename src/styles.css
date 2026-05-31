@@ -130,6 +130,11 @@ h1 {
   color: var(--accent-strong);
 }
 
+.status-pill[data-status="idle"] {
+  background: #fff7e8a3;
+  color: var(--muted);
+}
+
 .status-pill[data-status="loading"] {
   background: #fff7e8a3;
   color: var(--muted);
@@ -170,6 +175,7 @@ h1 {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.scope-form > input,
 .scope-controls input {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -178,6 +184,7 @@ h1 {
   min-width: 0;
   padding: 9px 10px;
   outline-color: var(--accent);
+  width: 100%;
 }
 
 .scope-controls button {
