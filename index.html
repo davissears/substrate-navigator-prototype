@@ -21,6 +21,8 @@
               <span class="captured-at" id="capturedAt">Last capture pending</span>
             </div>
             <form class="scope-form" id="scopeForm">
+              <label for="serverEndpoint">Substrate server endpoint</label>
+              <input id="serverEndpoint" name="serverEndpoint" type="url" autocomplete="url" spellcheck="false" placeholder="https://example.com/mcp" />
               <label for="resourceScope">Resource scope</label>
               <div class="scope-controls">
                 <input id="resourceScope" name="resourceScope" type="text" autocomplete="off" spellcheck="false" value="public/" placeholder="Blank asks for root scope" />
@@ -118,7 +120,7 @@
         <section class="panel">
           <p class="eyebrow">Live Bridge</p>
           <p class="bridge-note">
-            This reader calls the live Substrate Exchange MCP endpoint directly with JSON-RPC, then rebuilds the view from `exchange_list`, `exchange_read`, and `exchange_recent_activity`.
+            This reader calls your configured Substrate MCP endpoint directly with JSON-RPC, then rebuilds the view from `exchange_list`, `exchange_read`, and `exchange_recent_activity`.
           </p>
         </section>
       </aside>
