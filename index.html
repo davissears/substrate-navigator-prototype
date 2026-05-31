@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Substrate Readable GUI</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230e6f68'/%3E%3Cpath d='M14 42h36v6H14zM14 30h36v6H14zM14 18h36v6H14z' fill='%23fffaf0'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <aside class="sidebar" aria-label="Readable resources">
+        <div class="brand">
+          <p class="eyebrow">Substrate MCP</p>
+          <h1>Readable Surface</h1>
+          <p class="principal" id="principal"></p>
+
+          <div class="connection-card" aria-live="polite">
+            <div class="connection-row">
+              <span class="status-pill" id="connectionStatus">Loading</span>
+              <span class="captured-at" id="capturedAt">Last capture pending</span>
+            </div>
+            <form class="scope-form" id="scopeForm">
+              <label for="resourceScope">Resource scope</label>
+              <div class="scope-controls">
+                <input id="resourceScope" name="resourceScope" type="text" autocomplete="off" spellcheck="false" value="public/" placeholder="Blank asks for root scope" />
+                <button id="refreshButton" type="submit">Refresh</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <label class="search">
+          <span>Search resources</span>
+          <input id="searchInput" type="search" placeholder="transcript, project, follow-up..." />
+        </label>
+
+        <div class="filters" aria-label="Resource filters">
+          <button class="filter is-active" data-filter="all" type="button">All</button>
+          <button class="filter" data-filter="guide" type="button">Guides</button>
+          <button class="filter" data-filter="salon" type="button">Salon</button>
+          <button class="filter" data-filter="transcript" type="button">Transcripts</button>
+        </div>
+
+        <section class="corpus-map" aria-label="Corpus map">
+          <p class="eyebrow">Corpus Map</p>
+          <div class="stat-grid" id="corpusStats"></div>
+        </section>
+
+        <nav class="resource-list" id="resourceList"></nav>
+      </aside>
+
+      <section class="reader" aria-live="polite">
+        <header class="reader-header">
+          <div>
+            <p class="eyebrow" id="resourceKind"></p>
+            <h2 id="resourceTitle"></h2>
+          </div>
+          <button class="copy-button" id="copyPath" type="button">Copy path</button>
+        </header>
+
+        <div class="meta-grid">
+          <div>
+            <span>Resource</span>
+            <strong id="resourcePath"></strong>
+          </div>
+          <div>
+            <span>Ref</span>
+            <strong id="resourceRef"></strong>
+          </div>
+          <div>
+            <span>Words</span>
+            <strong id="wordCount"></strong>
+          </div>
+        </div>
+
+        <article class="content" id="content"></article>
+      </section>
+
+      <aside class="activity" aria-label="Navigation, MCP activity and tools">
+        <section class="panel">
+          <p class="eyebrow">Document Outline</p>
+          <div class="outline-list" id="outlineList"></div>
+        </section>
+
+        <section class="panel">
+          <p class="eyebrow">Resource Links</p>
+          <div class="link-list" id="linkedResources"></div>
+        </section>
+
+        <section class="panel">
+          <p class="eyebrow">Related Threads</p>
+          <div class="link-list" id="relatedResources"></div>
+        </section>
+
+        <section class="panel">
+          <p class="eyebrow">Available Moves</p>
+          <div class="mode-list" id="modeList"></div>
+        </section>
+
+        <section class="panel">
+          <p class="eyebrow">Inspect Details</p>
+          <div class="inspect-details" id="inspectDetails"></div>
+        </section>
+
+        <section class="panel">
+          <details class="raw-drawer" id="rawDrawer">
+            <summary>Raw MCP JSON</summary>
+            <div class="raw-json" id="rawJson"></div>
+          </details>
+        </section>
+
+        <section class="panel">
+          <p class="eyebrow">Recent Activity</p>
+          <div class="activity-list" id="recentActivity"></div>
+        </section>
+
+        <section class="panel">
+          <p class="eyebrow">Live Bridge</p>
+          <p class="bridge-note">
+            This reader calls the live Substrate Exchange MCP endpoint directly with JSON-RPC, then rebuilds the view from `exchange_list`, `exchange_read`, and `exchange_recent_activity`.
+          </p>
+        </section>
+      </aside>
+    </main>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>

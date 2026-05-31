@@ -1,0 +1,11 @@
+{
+  "name": "substrate-readable-gui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local browser interface for readable Substrate MCP exchange resources.",
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server ${PORT:-4173}",
+    "check": "node --check src/app.js && node --check src/exchange-api.js"
+  }
+}
