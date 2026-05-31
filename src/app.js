@@ -1,6 +1,7 @@
-import { loadExchangeSnapshot, MCP_ENDPOINT } from "./exchange-api.js";
+import { loadExchangeSnapshot } from "./exchange-api.js";
 
 const DEFAULT_RESOURCE_PREFIX = "public/";
+const ENDPOINT_STORAGE_KEY = "substrate-readable-gui:mcp-endpoint";
 
 const STOP_WORDS = new Set([
   "about",
@@ -36,6 +37,7 @@ const STOP_WORDS = new Set([
 let exchangeSnapshot = {
   surface: "exchange",
   principal: "connecting",
+  endpoint: "",
   capturedAt: null,
   resourcePrefix: DEFAULT_RESOURCE_PREFIX,
   status: "loading",
@@ -54,8 +56,9 @@ const state = {
   filter: "all",
   query: "",
   selectedPath: null,
+  endpoint: loadStoredEndpoint(),
   resourcePrefix: DEFAULT_RESOURCE_PREFIX,
-  loadStatus: "loading",
+  loadStatus: "idle",
   loadError: null
 };
 
@@ -64,6 +67,7 @@ const els = {
   connectionStatus: document.querySelector("#connectionStatus"),
   capturedAt: document.querySelector("#capturedAt"),
   scopeForm: document.querySelector("#scopeForm"),
+  serverEndpoint: document.querySelector("#serverEndpoint"),
   resourceScope: document.querySelector("#resourceScope"),
   refreshButton: document.querySelector("#refreshButton"),
   searchInput: document.querySelector("#searchInput"),
@@ -135,6 +139,30 @@ function formatDate(value) {
 
 function scopeLabel(value = state.resourcePrefix) {
   return value === "" ? "root scope" : value;
+}
+
+function endpointLabel(value = state.endpoint) {
+  return value || "no MCP endpoint configured";
+}
+
+function loadStoredEndpoint() {
+  try {
+    return localStorage.getItem(ENDPOINT_STORAGE_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function saveStoredEndpoint(endpoint) {
+  try {
+    if (endpoint) {
+      localStorage.setItem(ENDPOINT_STORAGE_KEY, endpoint);
+    } else {
+      localStorage.removeItem(ENDPOINT_STORAGE_KEY);
+    }
+  } catch {
+    // Storage can be unavailable in private or locked-down browser contexts.
+  }
 }
 
 function escapeHtml(value) {
@@ -819,6 +847,7 @@ function renderFilters() {
 
 function renderConnectionStatus() {
   const labels = {
+    idle: "Configure",
     loading: "Loading",
     connected: "Connected",
     error: "Error"
@@ -828,8 +857,13 @@ function renderConnectionStatus() {
   els.connectionStatus.dataset.status = state.loadStatus;
   els.refreshButton.disabled = state.loadStatus === "loading";
 
+  if (state.loadStatus === "idle") {
+    els.capturedAt.textContent = "Endpoint required";
+    return;
+  }
+
   if (state.loadStatus === "loading") {
-    els.capturedAt.textContent = `Loading ${scopeLabel()}`;
+    els.capturedAt.textContent = `Loading ${scopeLabel()} from ${endpointLabel()}`;
     return;
   }
 
@@ -862,6 +896,7 @@ function setSnapshot(snapshot, options = {}) {
   exchangeSnapshot = {
     surface: "exchange",
     principal: "unknown principal",
+    endpoint: state.endpoint,
     capturedAt: new Date().toISOString(),
     resourcePrefix: state.resourcePrefix,
     status: "connected",
@@ -988,7 +1023,7 @@ function renderLoading() {
   state.loadStatus = "loading";
   state.loadError = null;
   renderConnectionStatus();
-  els.principal.textContent = `Loading live MCP data from ${MCP_ENDPOINT}`;
+  els.principal.textContent = `Loading live MCP data from ${endpointLabel()}`;
   els.corpusStats.innerHTML = `<p class="stat-note">Connecting to the exchange endpoint.</p>`;
   els.resourceList.innerHTML = `<p class="empty-state">Loading readable resources...</p>`;
   els.resourceKind.textContent = "Live MCP";
@@ -1007,6 +1042,33 @@ function renderLoading() {
   els.recentActivity.innerHTML = emptyPanel("Waiting for recent activity.");
 }
 
+function renderEndpointRequired() {
+  state.loadStatus = "idle";
+  state.loadError = null;
+  renderedPath = null;
+  resources = [];
+  resourceByPath = new Map();
+  state.selectedPath = null;
+  renderConnectionStatus();
+  els.principal.textContent = "Configure a Substrate MCP server";
+  els.corpusStats.innerHTML = `<p class="stat-note">Enter a Substrate MCP endpoint to load resources.</p>`;
+  els.resourceList.innerHTML = `<p class="empty-state">No server endpoint configured.</p>`;
+  els.resourceKind.textContent = "MCP Endpoint";
+  els.resourceTitle.textContent = "Server required";
+  els.resourcePath.textContent = "Not configured";
+  els.resourceRef.textContent = "Unavailable";
+  els.wordCount.textContent = "0";
+  els.copyPath.disabled = true;
+  els.content.innerHTML = `<p>Add the Substrate server endpoint in the sidebar and refresh.</p>`;
+  els.outlineList.innerHTML = emptyPanel("No resource loaded.");
+  els.linkedResources.innerHTML = emptyPanel("No resource loaded.");
+  els.relatedResources.innerHTML = emptyPanel("No resource loaded.");
+  els.modeList.innerHTML = emptyPanel("No move modes loaded.");
+  els.inspectDetails.innerHTML = emptyPanel("No inspect details loaded.");
+  els.rawJson.innerHTML = emptyPanel("No raw MCP payloads loaded.");
+  els.recentActivity.innerHTML = emptyPanel("No activity loaded.");
+}
+
 function renderLoadError(error) {
   state.loadStatus = "error";
   state.loadError = error;
@@ -1017,7 +1079,7 @@ function renderLoadError(error) {
   els.resourceList.innerHTML = `<p class="empty-state">No resources loaded from the exchange.</p>`;
   els.resourceKind.textContent = "Live MCP";
   els.resourceTitle.textContent = "Could not load exchange";
-  els.resourcePath.textContent = MCP_ENDPOINT;
+  els.resourcePath.textContent = endpointLabel();
   els.resourceRef.textContent = "Unavailable";
   els.wordCount.textContent = "0";
   els.copyPath.disabled = true;
@@ -1036,10 +1098,18 @@ function renderLoadError(error) {
 
 async function reloadExchange(options = {}) {
   const preferredPath = options.preserveSelection ? state.selectedPath : null;
+  if (!state.endpoint) {
+    renderEndpointRequired();
+    return;
+  }
+
   renderLoading();
 
   try {
-    const snapshot = await loadExchangeSnapshot({ resourcePrefix: state.resourcePrefix });
+    const snapshot = await loadExchangeSnapshot({
+      endpoint: state.endpoint,
+      resourcePrefix: state.resourcePrefix
+    });
     state.loadStatus = "connected";
     state.loadError = null;
     setSnapshot(snapshot, { preferredPath });
@@ -1051,13 +1121,20 @@ async function reloadExchange(options = {}) {
 }
 
 async function init() {
+  els.serverEndpoint.value = state.endpoint;
   els.resourceScope.value = state.resourcePrefix;
-  await reloadExchange();
+  if (state.endpoint) {
+    await reloadExchange();
+  } else {
+    renderEndpointRequired();
+  }
 }
 
 els.scopeForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  state.endpoint = els.serverEndpoint.value.trim();
   state.resourcePrefix = els.resourceScope.value.trim();
+  saveStoredEndpoint(state.endpoint);
   reloadExchange({ preserveSelection: true });
 });
 
